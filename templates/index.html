@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Intelligent Text Assistance</title>
+    <link rel="stylesheet" href="../static/style.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        var typingTimer;
+        var doneTypingInterval = 500;
+
+        // Trigger next word prediction when typing stops
+        $('#inputForm').on('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(processText, doneTypingInterval);
+        });
+
+        function processText() {
+            var inputText = $('#textInput').text().trim();
+
+            if (inputText.length === 0) {
+                $('#predictionResult').text('');
+                return;
+            }
+
+            $.ajax({
+                url: '/next_word',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ text: inputText }),
+                success: function(response) {
+                    $('#predictionResult').text(response.next_word);
+                },
+                error: function() {
+                    $('#predictionResult').text('Error predicting word.');
+                }
+            });
+        }
+
+        // Complete sentence
+        $('#completion-button').on('click', function() {
+            var inputText = $('#textInput').text().trim();
+
+            if (inputText.length === 0) return;
+
+            $.ajax({
+                url: '/complete_sentence',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ text: inputText }),
+                success: function(response) {
+                    $('#textInput').text(response.completed_sentence);
+                    $('#predictionResult').text('');
+                },
+                error: function() {
+                    alert('Error completing sentence.');
+                }
+            });
+        });
+
+        // Fix current spelling (basic version: all words)
+        $('#fixByCursor-button').on('click', function() {
+            var inputText = $('#textInput').text().trim();
+
+            $.ajax({
+                url: '/fix_by_cursor',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ text: inputText }),
+                success: function(response) {
+                    $('#textInput').text(response.corrected_text);
+                    $('#predictionResult').text('');
+                },
+                error: function() {
+                    alert('Error fixing current word.');
+                }
+            });
+        });
+
+        // Fix all spellings
+        $('#fix-button').on('click', function() {
+            var inputText = $('#textInput').text().trim();
+
+            $.ajax({
+                url: '/fix_all',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ text: inputText }),
+                success: function(response) {
+                    $('#textInput').text(response.corrected_text);
+                    $('#predictionResult').text('');
+                },
+                error: function() {
+                    alert('Error fixing all spellings.');
+                }
+            });
+        });
+    });
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Intelligent Text Assistant for Prediction and Correction</h1>
+    </header>
+
+    <!-- Text Input Form -->
+    <div>
+        <form id="inputForm">
+            <br><br>
+            <label for="textInput">Enter Text:</label><br><br>
+            <div id="textInput" name="text" contenteditable="true" 
+                 style="border: 1px solid #ccc; padding: 10px; min-height: 80px;">
+            </div>
+        </form>
+        <h2>Suggestions:</h2>
+        <p><span id="predictionResult"></span></p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-container">
+        <button id="completion-button">Complete Sentence</button>
+        <button id="fixByCursor-button">Fix Current</button>
+        <button id="fix-button">Fix All Spellings</button>
+    </div>
+
+    <br><br>
+</body>
+</html>
